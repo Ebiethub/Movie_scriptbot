@@ -21,7 +21,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Initialize Groq LangChain model
-groq_api_key = "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"  # Replace with your actual API key
+groq_api_key = st.secrets["GROQ_API_KEY"]  # Replace with your actual API key
 model = ChatGroq(groq_api_key=groq_api_key, model_name="llama-3.3-70b-specdec", temperature=0.7)
 
 # Define cultural templates
