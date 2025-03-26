@@ -69,7 +69,7 @@ with st.sidebar:
     rating = st.select_slider("Audience Rating", ["G", "PG", "PG-13", "R"])
 
     # Dynamically generate acts
-    num_acts = st.number_input("Number of Acts", min_value=1, max_value=70, value=10)
+    num_acts = st.number_input("Number of Acts", min_value=1, max_value=70, value=5)
     acts = {}
     for i in range(1, num_acts + 1):
         default_text = f"Act {i} description goes here." if i > 1 else "Establish the setting, introduce main characters, and hint at the central conflict."
