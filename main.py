@@ -30,36 +30,28 @@ CULTURAL_PROMPTS = {
     "Hausa": "Incorporate Hausa traditional titles like 'Sarki', 'Madaki'. Use Northern Nigerian settings.",
     "Igbo": "Include Igbo cultural elements like 'Iri Ji' festival. Use terms like 'Nna anyi', 'Oga'.",
     "Pidgin": "Write dialogues in Nigerian Pidgin English. Use phrases like 'Wahala dey o!', 'How you dey?'",
-    "English": "Write dialogues in pure English. Use proper English phrases and dictions?'"
+    "English": "Write dialogues in pure English. Use proper English phrases and dictions."
 }
 
 # Create prompt template
 SCRIPT_PROMPT = ChatPromptTemplate.from_template("""
 You are a professional Nollywood scriptwriter. Create a {genre} movie script with these details:
-
 **Title**: {title}
 **Themes**: {themes}
 **Cultural Context**: {cultural}
 **Audience Rating**: {rating}
-
 **Structure Requirements**:
-1. Act 1 (Setup): {act1}
-2. Act 2 (Conflict): {act2}
-3. Act 3 (Resolution): {act3}
-
+{acts}
 **Formatting Guidelines**:
 - Use standard screenplay format
 - CAPITALIZE character names
 - Include scene headings (INT./EXT.)
 - Add cultural dialogues in {cultural} context
 - Keep scenes under 3 minutes
-
 **Characters**:
 {characters}
-
 **Additional Notes**:
 {notes}
-
 Generate the script with proper scene numbering and formatting. Use {cultural} language elements where appropriate.
 """)
 
@@ -75,19 +67,21 @@ with st.sidebar:
     themes = st.multiselect("Themes", ["Family Conflict", "Political Intrigue", "Cultural Heritage", "Modern vs Traditional", "Wealth & Poverty"])
     cultural = st.selectbox("Cultural Context", list(CULTURAL_PROMPTS.keys()))
     rating = st.select_slider("Audience Rating", ["G", "PG", "PG-13", "R"])
-    act1 = st.text_input("Act 1 (Setup)", "Introduce main characters and central conflict")
-    act2 = st.text_input("Act 2 (Conflict)", "Develop obstacles and character challenges")
-    act3 = st.text_input("Act 3 (Resolution)", "Resolve main conflict with cultural relevance")
-    
-# Character Builder
-with st.expander("Character Development"):
-    col1, col2 = st.columns(2)
-    with col1:
-        protagonist = st.text_input("Protagonist", "Chief Adebayo")
-        protagonist_traits = st.text_area("Protagonist Traits", "Proud Yoruba chief struggling with modern changes")
-    with col2:
-        antagonist = st.text_input("Antagonist", "Young Entrepreneur Tunde")
-        antagonist_traits = st.text_area("Antagonist Traits", "Ambitious Lagos businessman challenging traditions")
+
+    # Dynamically generate acts
+    num_acts = st.number_input("Number of Acts", min_value=1, max_value=70, value=10)
+    acts = {}
+    for i in range(1, num_acts + 1):
+        default_text = f"Act {i} description goes here." if i > 1 else "Establish the setting, introduce main characters, and hint at the central conflict."
+        acts[f"act{i}"] = st.text_input(f"Act {i}", default_text)
+
+    # Dynamically generate characters
+    num_characters = st.number_input("Number of Characters", min_value=2, max_value=15, value=2)
+    characters = {}
+    for i in range(1, num_characters + 1):
+        char_name = st.text_input(f"Character {i} Name", f"Character {i}")
+        char_traits = st.text_area(f"Character {i} Traits", f"Traits for {char_name}")
+        characters[char_name] = char_traits
 
 # Main Script Input
 title = st.text_input("Movie Title", "The Price of Tradition")
@@ -96,14 +90,13 @@ notes = st.text_area("Additional Notes", "Include a market scene and village mee
 # Generate Script
 if st.button("📜 Generate Script", type="primary"):
     with st.spinner("Crafting your Nollywood masterpiece..."):
-        characters = f"""
-        - {protagonist}: {protagonist_traits}
-        - {antagonist}: {antagonist_traits}
-        - Supporting Characters: Village elders, market women, young relatives
-        """
-        
+        # Compile character descriptions
+        compiled_characters = "\n".join([f"- {name}: {traits}" for name, traits in characters.items()])
+
+        # Compile acts
+        compiled_acts = "\n".join([f"{i}. Act {i}: {acts[f'act{i}']}" for i in range(1, num_acts + 1)])
+
         cultural_notes = CULTURAL_PROMPTS[cultural]
-        
         try:
             response = chain.invoke({
                 "genre": genre,
@@ -111,16 +104,12 @@ if st.button("📜 Generate Script", type="primary"):
                 "themes": ", ".join(themes),
                 "cultural": cultural_notes,
                 "rating": rating,
-                "act1": act1,
-                "act2": act2,
-                "act3": act3,
-                "characters": characters,
+                "acts": compiled_acts,
+                "characters": compiled_characters,
                 "notes": notes
             })
-            
             st.subheader(f"Generated Script: {title}")
             st.code(response, language="plaintext")
-            
             # Add download button
             st.download_button(
                 label="📥 Download Script",
@@ -128,7 +117,6 @@ if st.button("📜 Generate Script", type="primary"):
                 file_name=f"{title.replace(' ', '_')}.txt",
                 mime="text/plain"
             )
-            
         except Exception as e:
             st.error(f"Error generating script: {str(e)}")
 
@@ -139,7 +127,6 @@ st.markdown("""
 Generated scripts are automatically registered with:
 - [Nigerian Copyright Commission](https://copyright.gov.ng)
 - NFVCB Script Registry
-
 **Royalty Information**:
 - Basic Registration: ₦5,000
 - Premium Protection: ₦15,000 (includes legal support)
